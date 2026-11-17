@@ -3,7 +3,9 @@
  *
  * Test Coverage:
  * - spawnCoana: runs cli-wrapper.mjs from the cache with the caller's args,
- *   cwd and environment, and surfaces a failing run's output.
+ *   cwd and environment, passes what socket-cli adds in
+ *   SOCKET_CLI_COANA_CONTEXT, or as separate variables to a Coana predating
+ *   it, and surfaces a failing run's output.
  *
  * Testing Approach:
  * A fake cli-wrapper.mjs is installed into a temporary cache with the real
@@ -23,10 +25,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { spawn } from '@socketsecurity/registry/lib/spawn'
 
-import constants from '../constants.mts'
+import constants, { COANA_CLI_VERSION } from '../constants.mts'
 import { spawnCoana } from './coana-release.mts'
-import { getCliUserAgent } from './sdk.mts'
+import { getCliUserAgent, getDefaultApiBaseUrl } from './sdk.mts'
 
+// Predates SOCKET_CLI_COANA_CONTEXT.
 const VERSION = '1.2.3'
 
 // Prints what it was run with, or fails the way Coana does for some errors.
@@ -74,18 +77,21 @@ describe('spawnCoana', () => {
       path.join(extracted, 'cli-wrapper.mjs'),
       FAKE_CLI_WRAPPER,
     )
-    await spawn(
-      'node',
-      [
-        path.join(constants.distPath, 'coana-cache.mjs'),
-        'install',
-        VERSION,
-        'cli',
-        'a'.repeat(64),
-        extracted,
-      ],
-      { stdio: 'pipe' },
-    )
+    for (const version of [VERSION, COANA_CLI_VERSION]) {
+      // eslint-disable-next-line no-await-in-loop
+      await spawn(
+        'node',
+        [
+          path.join(constants.distPath, 'coana-cache.mjs'),
+          'install',
+          version,
+          'cli',
+          'a'.repeat(64),
+          extracted,
+        ],
+        { stdio: 'pipe' },
+      )
+    }
   })
 
   afterAll(async () => {
@@ -121,17 +127,73 @@ describe('spawnCoana', () => {
     }
   })
 
-  it('sets SOCKET_ORG_SLUG and SOCKET_CALLER_USER_AGENT, which options.env overrides', async () => {
-    const { env } = await runFake()
-    expect(env['SOCKET_ORG_SLUG']).toBe('acme')
-    expect(env['SOCKET_CALLER_USER_AGENT']).toBe(getCliUserAgent())
-
-    const overridden = await runFake({
-      env: { SOCKET_CALLER_USER_AGENT: 'custom-caller-agent/1.0.0' },
+  it('passes what it adds in SOCKET_CLI_COANA_CONTEXT to the pinned Coana', async () => {
+    const { env } = await runFake({
+      coanaVersion: COANA_CLI_VERSION,
+      repoName: 'repo',
     })
-    expect(overridden.env['SOCKET_CALLER_USER_AGENT']).toBe(
-      'custom-caller-agent/1.0.0',
-    )
+
+    const context = JSON.parse(env['SOCKET_CLI_COANA_CONTEXT']!)
+    expect(context).toMatchObject({
+      apiBaseUrl: getDefaultApiBaseUrl(),
+      cliVersion: constants.ENV.INLINED_SOCKET_CLI_VERSION,
+      orgSlug: 'acme',
+      repoName: 'repo',
+      userAgent: getCliUserAgent(),
+    })
+    // Coana refuses a key it does not know.
+    expect(
+      Object.keys(context).filter(
+        key =>
+          ![
+            'apiBaseUrl',
+            'apiProxy',
+            'apiToken',
+            'cliVersion',
+            'orgSlug',
+            'repoName',
+            'userAgent',
+          ].includes(key),
+      ),
+    ).toEqual([])
+    expect(env['SOCKET_ORG_SLUG']).toBeUndefined()
+    expect(env['SOCKET_CALLER_USER_AGENT']).toBeUndefined()
+    expect(env['SOCKET_REPO_NAME']).toBeUndefined()
+  })
+
+  it("passes the user's SOCKET_REPO_NAME in the context when socket-cli names no repository", async () => {
+    process.env['SOCKET_REPO_NAME'] = 'users-repo'
+    try {
+      const { env } = await runFake({ coanaVersion: COANA_CLI_VERSION })
+
+      expect(JSON.parse(env['SOCKET_CLI_COANA_CONTEXT']!)).toMatchObject({
+        repoName: 'users-repo',
+      })
+    } finally {
+      delete process.env['SOCKET_REPO_NAME']
+    }
+  })
+
+  it("leaves socket-cli's own settings out of Coana's environment", async () => {
+    // Set for every socket-cli process, so a spread would pass it on.
+    expect(constants.processEnv['SOCKET_CLI_GIT_USER_NAME']).toBeTruthy()
+
+    const { env } = await runFake({ coanaVersion: COANA_CLI_VERSION })
+
+    expect(env['SOCKET_CLI_GIT_USER_NAME']).toBeUndefined()
+    expect(env['SOCKET_CLI_API_BASE_URL']).toBeUndefined()
+  })
+
+  it('sets the variables a Coana predating the context reads', async () => {
+    const { env } = await runFake({ repoName: 'repo' })
+
+    expect(env['SOCKET_CLI_COANA_CONTEXT']).toBeUndefined()
+    expect(env).toMatchObject({
+      SOCKET_CALLER_USER_AGENT: getCliUserAgent(),
+      SOCKET_CLI_API_BASE_URL: getDefaultApiBaseUrl(),
+      SOCKET_ORG_SLUG: 'acme',
+      SOCKET_REPO_NAME: 'repo',
+    })
   })
 
   it('surfaces captured stdout when stderr is empty (Coana logs some failures to stdout)', async () => {

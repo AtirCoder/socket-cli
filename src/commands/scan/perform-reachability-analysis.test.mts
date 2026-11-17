@@ -417,6 +417,51 @@ describe('performReachabilityAnalysis --use-only-socket-facts-artifacts gating',
   })
 })
 
+describe('performReachabilityAnalysis repository name', () => {
+  let scanCwd: string
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFetchOrganization.mockResolvedValue({
+      ok: true,
+      data: { organizations: {} },
+    })
+    mockHasEnterpriseOrgPlan.mockReturnValue(true)
+    mockSpawnCoana.mockResolvedValue({ ok: true, data: '' })
+    scanCwd = mkdtempSync(path.join(tmpdir(), 'socket-rea-repo-'))
+    writeFileSync(
+      path.join(scanCwd, '.socket.facts.json'),
+      JSON.stringify({ components: [] }),
+    )
+  })
+
+  afterEach(() => {
+    rmSync(scanCwd, { force: true, recursive: true })
+  })
+
+  it.for([
+    { name: 'passes the repository name', repoName: 'repo', expected: 'repo' },
+    {
+      name: 'passes no default repository name',
+      repoName: 'socket-default-repository',
+      expected: undefined,
+    },
+  ])('$name', async ({ expected, repoName }) => {
+    await performReachabilityAnalysis({
+      cwd: scanCwd,
+      orgSlug: TEST_ORG_SLUG,
+      packagePaths: TEST_PACKAGE_PATHS,
+      reachabilityOptions: makeReachabilityOptions(),
+      repoName,
+      target: scanCwd,
+    })
+
+    const options = mockSpawnCoana.mock.calls[0]![2]
+    expect(options.repoName).toBe(expected)
+    expect(options).not.toHaveProperty('env')
+  })
+})
+
 describe('performReachabilityAnalysis stdio routing by output kind', () => {
   let scanCwd: string
 
