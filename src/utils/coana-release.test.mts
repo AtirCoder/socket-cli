@@ -6,6 +6,7 @@
  *   cwd and environment, passes what socket-cli adds in
  *   SOCKET_CLI_COANA_CONTEXT, or as separate variables to a Coana predating
  *   it, and surfaces a failing run's output.
+ * - spawnCoana with a minimum version: refuses an older Coana.
  *
  * Testing Approach:
  * A fake cli-wrapper.mjs is installed into a temporary cache with the real
@@ -194,6 +195,27 @@ describe('spawnCoana', () => {
       SOCKET_ORG_SLUG: 'acme',
       SOCKET_REPO_NAME: 'repo',
     })
+  })
+
+  it('refuses a Coana older than the minimum, naming the minimum', async () => {
+    const result = await spawnCoana(['run', '.'], 'acme', {
+      coanaVersion: VERSION,
+      minimumVersion: COANA_CLI_VERSION,
+      stdio: 'pipe',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.message).toBe(`Coana ${VERSION} is too old for this command`)
+    expect(result.cause).toContain(`Coana ${COANA_CLI_VERSION} or newer`)
+  })
+
+  it('runs a Coana at the minimum', async () => {
+    const run = await runFake({
+      coanaVersion: COANA_CLI_VERSION,
+      minimumVersion: COANA_CLI_VERSION,
+    })
+
+    expect(run.args).toEqual(['run', '.'])
   })
 
   it('surfaces captured stdout when stderr is empty (Coana logs some failures to stdout)', async () => {

@@ -66,6 +66,9 @@ type CoanaDownload = { ok: true } | { ok: false; status: number }
 type CoanaSpawnOptions = {
   coanaVersion?: string | undefined
   cwd?: string | URL | undefined
+  // The oldest Coana the command exists in; checked against the version a
+  // pinned spec resolves to.
+  minimumVersion?: string | undefined
   repoName?: string | undefined
   spinner?: Spinner | undefined
   stdio?: SpawnOptions['stdio'] | undefined
@@ -459,6 +462,7 @@ export async function spawnCoana(
   const {
     coanaVersion,
     cwd,
+    minimumVersion,
     repoName,
     spinner,
     stdio = 'inherit',
@@ -530,6 +534,13 @@ export async function spawnCoana(
       return coanaDirCResult
     }
     const { dir, version } = coanaDirCResult.data
+    if (minimumVersion && semver.lt(version, minimumVersion)) {
+      return {
+        ok: false,
+        message: `Coana ${version} is too old for this command`,
+        cause: `It needs Coana ${minimumVersion} or newer. Pin that or a newer version with --reach-version or --fix-version, or leave the version unpinned.`,
+      }
+    }
     scriptPath = path.join(dir, 'cli-wrapper.mjs')
     takesContext = !semver.lt(version, COANA_CLI_VERSION)
   }
