@@ -381,7 +381,9 @@ async function runCoanaCache(
 function withoutNpmPackageEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const out: NodeJS.ProcessEnv = {}
   for (const key of Object.keys(env)) {
-    out[key] = key.startsWith('npm_package_') ? undefined : env[key]
+    out[key] = key.toLowerCase().startsWith('npm_package_')
+      ? undefined
+      : env[key]
   }
   return out
 }

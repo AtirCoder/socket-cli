@@ -111,10 +111,16 @@ describe('spawnCoana', () => {
     try {
       const { env } = await runFake()
 
-      expect(env['npm_package_dependencies_react']).toBeUndefined()
-      expect(env['npm_config_registry']).toBe(
-        'https://artifactory.example/npm/',
-      )
+      expect(
+        Object.entries(env).find(
+          ([key]) => key.toLowerCase() === 'npm_package_dependencies_react',
+        )?.[1],
+      ).toBeUndefined()
+      expect(
+        Object.entries(env).find(
+          ([key]) => key.toLowerCase() === 'npm_config_registry',
+        )?.[1],
+      ).toBe('https://artifactory.example/npm/')
     } finally {
       delete process.env['npm_package_dependencies_react']
       delete process.env['npm_config_registry']
