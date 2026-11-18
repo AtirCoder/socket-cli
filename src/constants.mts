@@ -4,11 +4,22 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import registryConstants from '@socketsecurity/registry/lib/constants'
+import registryConstants, {
+  createConstantsObject,
+  getIpc,
+  registryConstantsAttribs,
+} from './registry-constants.mts'
+import { envAsBoolean, envAsNumber, envAsString } from './utils/env.mts'
+import { spawnSync } from './utils/spawn-sync.mts'
 
+import type {
+  RegistryConstants,
+  RegistryEnv as RegistryConstantsEnv,
+  RegistryInternals as RegistryConstantsInternals,
+} from './registry-constants.mts'
+import type { Remap } from './utils/objects.mts'
 import type { Agent } from './utils/package-environment.mts'
-import type { Remap } from '@socketsecurity/registry/lib/objects'
-import type { SpawnOptions } from '@socketsecurity/registry/lib/spawn'
+import type { SpawnOptions } from './utils/spawn.mts'
 
 const require = createRequire(import.meta.url)
 const __filename = fileURLToPath(import.meta.url)
@@ -97,18 +108,11 @@ const {
   YARN_BERRY,
   YARN_CLASSIC,
   YARN_LOCK,
-  kInternalsSymbol,
-  [kInternalsSymbol as unknown as 'Symbol(kInternalsSymbol)']: {
-    attributes: registryConstantsAttribs,
-    createConstantsObject,
-    getIpc,
-  },
 } = registryConstants
 
-export type RegistryEnv = typeof registryConstants.ENV
+export type RegistryEnv = RegistryConstantsEnv
 
-export type RegistryInternals =
-  (typeof registryConstants)['Symbol(kInternalsSymbol)']
+export type RegistryInternals = RegistryConstantsInternals
 
 export type Sentry = any
 
@@ -195,7 +199,7 @@ const ALERT_TYPE_MILD_CVE = 'mildCVE'
 const API_V0_URL = 'https://api.socket.dev/v0/'
 // The Coana CLI version Socket CLI runs by default. Coana's release workflow
 // rewrites this line in its bump PRs.
-const COANA_CLI_VERSION = '15.15.0'
+const COANA_CLI_VERSION = '15.15.1'
 const CONFIG_KEY_API_BASE_URL = 'apiBaseUrl'
 const CONFIG_KEY_API_PROXY = 'apiProxy'
 const CONFIG_KEY_API_TOKEN = 'apiToken'
@@ -279,10 +283,7 @@ const SOCKET_YML = 'socket.yml'
 const V1_MIGRATION_GUIDE_URL = 'https://docs.socket.dev/docs/v1-migration-guide'
 
 export type Constants = Remap<
-  Omit<
-    typeof registryConstants,
-    'Symbol(kInternalsSymbol)' | 'ENV' | 'ipcObject'
-  > & {
+  Omit<RegistryConstants, 'Symbol(kInternalsSymbol)' | 'ENV' | 'ipcObject'> & {
     readonly 'Symbol(kInternalsSymbol)': Internals
     readonly ALERT_TYPE_CRITICAL_CVE: typeof ALERT_TYPE_CRITICAL_CVE
     readonly ALERT_TYPE_CVE: typeof ALERT_TYPE_CVE
@@ -422,7 +423,6 @@ export type Constants = Remap<
     readonly shadowYarnBinPath: string
     readonly socketAppDataPath: string
     readonly socketCachePath: string
-    readonly socketRegistryPath: string
     readonly zshRcPath: string
   }
 >
@@ -435,8 +435,7 @@ function getNpmStdioPipeOptions() {
     _npmStdioPipeOptions = {
       cwd: process.cwd(),
       // On Windows, npm is often a .cmd file that requires shell execution.
-      // The spawn function from @socketsecurity/registry will handle this properly
-      // when shell is true.
+      // The local spawn helper handles .cmd files when shell is true.
       shell: constants.WIN32,
     }
   }
@@ -445,10 +444,6 @@ function getNpmStdioPipeOptions() {
 
 const LAZY_ENV = () => {
   const { env } = process
-  const envHelpers = /*@__PURE__*/ require('@socketsecurity/registry/lib/env')
-  const envAsBoolean = envHelpers.envAsBoolean
-  const envAsNumber = envHelpers.envAsNumber
-  const envAsString = envHelpers.envAsString
   // Keep this leaf independent from dist/utils.js. That chunk imports
   // constants.js, so requiring it here forms a runtime cycle that Node SEA's
   // VFS loader cannot safely resolve.
@@ -486,7 +481,7 @@ const LAZY_ENV = () => {
   // provided environment variables.
   return Object.freeze({
     __proto__: null,
-    // Lazily access registryConstants.ENV.
+    // Start with the environment values captured by the inline constants module.
     ...registryConstants.ENV,
     // Disable using GitHub's workflow actions/cache.
     // https://github.com/actions/cache
@@ -795,8 +790,6 @@ const lazyNodeMemoryFlags = () => {
 }
 
 const lazyNpmCachePath = () => {
-  const spawnHelpers = /*@__PURE__*/ require('@socketsecurity/registry/lib/spawn')
-  const spawnSync = spawnHelpers.spawnSync
   return spawnSync(
     constants.npmExecPath,
     ['config', 'get', 'cache'],
@@ -805,8 +798,6 @@ const lazyNpmCachePath = () => {
 }
 
 const lazyNpmGlobalPrefix = () => {
-  const spawnHelpers = /*@__PURE__*/ require('@socketsecurity/registry/lib/spawn')
-  const spawnSync = spawnHelpers.spawnSync
   return spawnSync(
     constants.npmExecPath,
     ['prefix', '-g'],
@@ -888,9 +879,7 @@ const lazySocketAppDataPath = (): string | undefined => {
     : constants.ENV.XDG_DATA_HOME
   if (!dataHome) {
     if (WIN32) {
-      const {
-        logger,
-      } = /*@__PURE__*/ require('@socketsecurity/registry/lib/logger')
+      const { logger } = /*@__PURE__*/ require('./utils.js')
       logger.warn(`Missing %LOCALAPPDATA%.`)
     } else {
       dataHome = path.join(
@@ -903,9 +892,6 @@ const lazySocketAppDataPath = (): string | undefined => {
 }
 
 const lazySocketCachePath = () => path.join(constants.rootPath, '.cache')
-
-const lazySocketRegistryPath = () =>
-  path.join(constants.externalPath, '@socketsecurity/registry')
 
 const lazyZshRcPath = () => path.join(constants.homePath, '.zshrc')
 
@@ -1043,7 +1029,6 @@ const constants: Constants = createConstantsObject(
     shadowYarnBinPath: undefined,
     socketAppDataPath: undefined,
     socketCachePath: undefined,
-    socketRegistryPath: undefined,
     zshRcPath: undefined,
   },
   {
@@ -1080,7 +1065,6 @@ const constants: Constants = createConstantsObject(
       shadowYarnBinPath: lazyShadowYarnBinPath,
       socketAppDataPath: lazySocketAppDataPath,
       socketCachePath: lazySocketCachePath,
-      socketRegistryPath: lazySocketRegistryPath,
       zshRcPath: lazyZshRcPath,
     },
     internals: {

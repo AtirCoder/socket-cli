@@ -10,13 +10,12 @@ import path from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { normalizePath } from '@socketsecurity/registry/lib/path'
-
 import {
   createSupportedFilesFilter,
   globWithGitIgnore,
   pathsToGlobPatterns,
 } from './glob.mts'
+import { normalizePath } from './path.mts'
 
 // Filter functions defined at module scope to satisfy linting rules.
 function filterJsonFiles(filepath: string): boolean {

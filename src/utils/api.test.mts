@@ -122,6 +122,8 @@ vi.mock('./errors.mts', () => ({
 vi.mock('./debug.mts', () => ({
   debugApiRequest: vi.fn(),
   debugApiResponse: vi.fn(),
+  debugDir: vi.fn(),
+  debugFn: vi.fn(),
 }))
 
 // Mock requirements.

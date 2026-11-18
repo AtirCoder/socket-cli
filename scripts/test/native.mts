@@ -241,9 +241,8 @@ async function main(): Promise<number> {
       )
     }
     process.env['SOCKET_CLI_NATIVE_TEST_NODE_VERSION'] = nodeRuntime.version
-    process.env['SOCKET_CLI_NATIVE_TEST_UPDATE_SNAPSHOTS'] = String(
-      updatesSnapshots,
-    )
+    process.env['SOCKET_CLI_NATIVE_TEST_UPDATE_SNAPSHOTS'] =
+      String(updatesSnapshots)
     // Give this run private package-manager caches so npm npx and pnpm dlx
     // never contend with each other or other local/test-runner activity.
     process.env['HOME'] = path.join(stageDir, 'home')

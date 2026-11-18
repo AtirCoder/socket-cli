@@ -131,18 +131,20 @@ async function generateLocalhostCertificate(
   const requestPath = join(workingDirectory, 'direct-api-timeout.csr.pem')
   const runOpenSsl = (args: string[]) =>
     new Promise<void>((resolve, reject) => {
-      const openssl = spawn(
-        'openssl',
-        args,
-        { cwd: workingDirectory, stdio: 'ignore', windowsHide: true },
-      )
+      const openssl = spawn('openssl', args, {
+        cwd: workingDirectory,
+        stdio: 'ignore',
+        windowsHide: true,
+      })
       openssl.once('error', reject)
       openssl.once('close', code => {
         if (code === 0) {
           resolve()
         } else {
           reject(
-            new Error(`OpenSSL failed to create the test certificate (${code})`),
+            new Error(
+              `OpenSSL failed to create the test certificate (${code})`,
+            ),
           )
         }
       })

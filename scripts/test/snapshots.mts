@@ -170,7 +170,10 @@ export interface SnapshotWorkflowDependencies {
   createArtifactsDir(): Promise<string>
   assertDependenciesCurrent(): Promise<void>
   runNative(update: boolean, artifactsDir: string): void
-  runDependencyNative(dependencyName: SnapshotDependencyName, artifactsDir: string): void
+  runDependencyNative(
+    dependencyName: SnapshotDependencyName,
+    artifactsDir: string,
+  ): void
   runTerminal(update: boolean, artifactsDir: string): void
   writeTestResult(artifactsDir: string, sourceCommit: string): Promise<void>
   runReport(artifactsDir: string, reportPath: string): void
@@ -209,9 +212,12 @@ const DEFAULT_DEPENDENCIES: SnapshotWorkflowDependencies = {
     })
   },
   runDependencyNative(dependencyName, artifactsDir) {
-    run(['scripts/test/native.mts', ...dependencySnapshotArgs(dependencyName)], {
-      env: { ...process.env, SOCKET_CLI_NATIVE_TEST_ARTIFACTS: artifactsDir },
-    })
+    run(
+      ['scripts/test/native.mts', ...dependencySnapshotArgs(dependencyName)],
+      {
+        env: { ...process.env, SOCKET_CLI_NATIVE_TEST_ARTIFACTS: artifactsDir },
+      },
+    )
   },
   runTerminal(update, artifactsDir) {
     run(terminalSnapshotArgs(update), {

@@ -239,6 +239,7 @@
 !/test/unit/sea/download-bytes.test.mts
 !/test/unit/sea/download-cache.test.mts
 !/test/unit/sea/runtime.test.mts
+!/test/unit/sea/pnpm-lock.test.mts
 !/test/unit/sea/version.test.mts
 !/test/unit/utils/
 !/test/unit/utils/agent.test.mts
@@ -381,6 +382,7 @@
 !/eslint.config.js
 !/knip.json
 !/package.json
+!/pnpm-workspace.yaml
 !/patches/@rollup__plugin-commonjs@28.0.6.patch
 !/patches/ansi-term@0.0.2.patch
 !/patches/blessed-contrib@4.11.0.patch
@@ -406,10 +408,6 @@
 !/scripts/ci/setup-uv.mts
 !/scripts/ci/upload-artifact.mjs
 !/scripts/constants.js
-!/scripts/lib/is-main-module.mts
-!/scripts/lib/linters.mts
-!/scripts/lib/run-main.mts
-!/scripts/lib/scope.mts
 !/scripts/lint.mts
 !/scripts/release/add-unreleased.mts
 !/scripts/release/availability.mts
@@ -433,7 +431,7 @@
 !/scripts/update.mts
 !/scripts/utils/fs.js
 !/scripts/utils/packages.js
-!/scripts/utils/registry-helpers.js
+!/scripts/lib/**
 !/sd
 !/shadow-bin/npm
 !/shadow-bin/npx
@@ -1062,6 +1060,7 @@
 !/src/sea/readme-version.mts
 !/src/sea/.node-version
 !/src/sea/node-version.mts
+!/src/sea/pnpm-lock.mts
 !/src/sea/licenses/cdxgen-third-party/boolbase-1.0.0-ISC.txt
 !/src/sea/licenses/cdxgen-third-party/err-code-2.0.3-MIT.txt
 !/src/sea/licenses/cdxgen-third-party/imurmurhash-0.1.4-MIT.txt
@@ -1169,8 +1168,8 @@
 !/src/utils/npm-config.mts
 !/src/utils/npm-spec.mts
 !/src/utils/objects.mts
-!/src/utils/is-object-object.mjs
-!/src/utils/is-object-object.d.mts
+!/src/utils/is-record.mjs
+!/src/utils/is-record.d.mts
 !/src/utils/organization.mts
 !/src/utils/output-formatting.mts
 !/src/utils/package-environment.mts
@@ -1287,8 +1286,10 @@
 !/test/fixtures/commands/optimize/pnpm/pnpm-lock.yaml
 !/test/fixtures/commands/optimize/pnpm8/package.json
 !/test/fixtures/commands/optimize/pnpm8/pnpm-lock.yaml
+!/test/fixtures/commands/optimize/pnpm8/pnpm-workspace.yaml
 !/test/fixtures/commands/optimize/pnpm9/package.json
 !/test/fixtures/commands/optimize/pnpm9/pnpm-lock.yaml
+!/test/fixtures/commands/optimize/pnpm9/pnpm-workspace.yaml
 !/test/fixtures/commands/optimize/yarn/package.json
 !/test/fixtures/commands/optimize/yarn/yarn.lock
 !/test/fixtures/commands/patch/npm/.socket/blobs/76682a9fc3bbe62975176e2541f39a8168877d828d5cad8b56461fc36ac2b856

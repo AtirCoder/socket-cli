@@ -4,14 +4,13 @@ import { fileURLToPath } from 'node:url'
 
 import { it } from 'vitest'
 
-import { type SpawnOptions, spawn } from '@socketsecurity/registry/lib/spawn'
-import { stripAnsi } from '@socketsecurity/registry/lib/strings'
-
 import constants, {
   COANA_CLI_VERSION,
   FLAG_HELP,
   FLAG_VERSION,
 } from '../src/constants.mts'
+import { type SpawnOptions, spawn } from '../src/utils/spawn.mts'
+import { stripAnsi } from '../src/utils/strings.mts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

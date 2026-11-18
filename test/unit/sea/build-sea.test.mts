@@ -9,12 +9,13 @@ import { describe, expect, it } from 'vitest'
 
 import { seaArchivePaths } from '../../../src/sea/archive-paths.mts'
 import {
-  findLockedPackageIntegrity,
   findNodeArchiveSha256,
+  getSocketPatchPackageName,
   parseArgs,
   sha512IntegrityHex,
 } from '../../../src/sea/build-sea.mts'
 import { createSeaCapabilities } from '../../../src/sea/capabilities.mts'
+import { findLockedPackageIntegrity } from '../../../src/sea/pnpm-lock.mts'
 import {
   NODE_VERSION_END,
   NODE_VERSION_START,
@@ -79,19 +80,29 @@ describe('SEA lockfile metadata', () => {
       await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8')
     ).replace(/\r\n/g, '\n')
     const packageName = '@socketsecurity/socket-patch-win32-x64'
-    const integrity = findLockedPackageIntegrity(lock, packageName, '2.0.0')
+    const integrity = findLockedPackageIntegrity(lock, packageName, '5.1.0')
 
     expect(integrity).toMatch(/^sha512-/)
     expect(
       findLockedPackageIntegrity(
         lock.replace(/\r?\n/g, '\r\n'),
         packageName,
-        '2.0.0',
+        '5.1.0',
       ),
     ).toBe(integrity)
     expect(findLockedPackageIntegrity(lock, packageName, '99.99.99')).toBe(
       undefined,
     )
+  })
+
+  it('finds the pinned Linux socket-patch integrity for each libc', async () => {
+    const lock = await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8')
+    for (const libc of ['gnu', 'musl'] as const) {
+      const packageName = getSocketPatchPackageName('linux', 'x64', libc)
+      expect(findLockedPackageIntegrity(lock, packageName, '5.1.0')).toMatch(
+        /^sha512-/,
+      )
+    }
   })
 })
 

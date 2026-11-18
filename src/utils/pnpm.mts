@@ -3,11 +3,10 @@ import { existsSync } from 'node:fs'
 import yaml from 'js-yaml'
 import semver from 'semver'
 
-import { readFileUtf8 } from '@socketsecurity/registry/lib/fs'
-import { isObjectObject } from '@socketsecurity/registry/lib/objects'
-import { stripBom } from '@socketsecurity/registry/lib/strings'
-
+import { readFileUtf8 } from './fs.mts'
+import { isRecord } from './objects.mts'
 import { idToNpmPurl } from './spec.mts'
+import { stripBom } from './strings.mts'
 
 import type { LockfileObject, PackageSnapshot } from '@pnpm/lockfile.fs'
 import type { SemVer } from 'semver'
@@ -67,7 +66,7 @@ export function parsePnpmLockfile(
       result = yaml.load(stripBom(lockfileContent))
     } catch {}
   }
-  return isObjectObject(result) ? (result as LockfileObject) : null
+  return isRecord(result) ? (result as unknown as LockfileObject) : null
 }
 
 export function parsePnpmLockfileVersion(version: unknown): SemVer | undefined {

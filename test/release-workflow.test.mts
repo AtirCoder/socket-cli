@@ -1,10 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import {
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -153,9 +148,7 @@ describe('v1 release workflow contract', () => {
     const stage = workflow.jobs.publish.steps.find(
       step => step.name === 'Stage release packages',
     )
-    const parser = stage?.run
-      ?.split("<<'NODE'\n")[1]
-      ?.split('\nNODE')[0]
+    const parser = stage?.run?.split("<<'NODE'\n")[1]?.split('\nNODE')[0]
     expect(parser).toBeDefined()
 
     const directory = mkdtempSync(path.join(tmpdir(), 'npm-stage-output-'))
@@ -221,7 +214,9 @@ describe('v1 release workflow contract', () => {
     expect(checkIndex).toBeGreaterThanOrEqual(0)
     expect(finalizeIndex).toBeGreaterThan(checkIndex)
     expect(finalize?.run).toContain('make_latest=false')
-    expect(finalize?.run).toContain('gh release view "${TAG}" --json databaseId')
+    expect(finalize?.run).toContain(
+      'gh release view "${TAG}" --json databaseId',
+    )
     expect(finalize?.run).not.toContain('releases/tags/${TAG}')
   })
 

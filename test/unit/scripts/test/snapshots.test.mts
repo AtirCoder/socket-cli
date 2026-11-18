@@ -66,7 +66,7 @@ describe('native snapshot runner', () => {
       '--build',
       'test/native/commands/cli.native.test.mts',
       '--testNamePattern',
-      'captures bundled patch help for (apply|rollback|get|scan|list|remove|setup|repair)|captures bundled socket-patch version',
+      'captures bundled patch help for (apply|rollback|get|scan|list|remove|repair)|captures bundled socket-patch version',
       '--update',
     ]
     expect(dependencySnapshotArgs('socket-patch')).toEqual(patchArgs)
