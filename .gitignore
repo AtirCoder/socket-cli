@@ -1168,6 +1168,7 @@
 !/src/utils/npm-paths.test.mts
 !/src/utils/npm-config.mts
 !/src/utils/npm-spec.mts
+!/src/utils/npm-spec.test.mts
 !/src/utils/objects.mts
 !/src/utils/is-object-object.mjs
 !/src/utils/is-object-object.d.mts

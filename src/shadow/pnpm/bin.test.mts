@@ -160,6 +160,21 @@ describe('shadowPnpm', () => {
     )
   })
 
+  it('should scan the aliased package instead of the alias name on pnpm add', async () => {
+    await shadowPnpm([
+      'add',
+      'my-lodash@npm:lodash@4.17.21',
+      'node-types@npm:@types/node@20.0.0',
+    ])
+
+    expect(mockGetAlertsMapFromPurls).toHaveBeenCalledWith(
+      ['pkg:npm/lodash@4.17.21', 'pkg:npm/@types/node@20.0.0'],
+      expect.objectContaining({
+        nothrow: true,
+      }),
+    )
+  })
+
   it('should handle multiple packages', async () => {
     await shadowPnpm(['add', 'lodash', 'axios@1.0.0', '@types/node'])
 

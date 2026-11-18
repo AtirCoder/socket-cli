@@ -26,8 +26,7 @@ import npmPackageArg from 'npm-package-arg'
 import { NPM } from '../constants.mts'
 import { createPurlObject } from './purl.mts'
 
-// @ts-expect-error - Result is re-exported below.
-import type { Result } from 'npm-package-arg'
+import type { AliasResult, Result } from 'npm-package-arg'
 
 export type {
   AliasResult,
@@ -98,38 +97,48 @@ export function safeParseNpmSpec(
     }
   }
 
+  // Unwrap npm alias specs to scan the target package instead of the alias.
+  let target: Result = parsed
+  while (target.type === 'alias') {
+    const { subSpec } = target as AliasResult
+    if (!subSpec) {
+      break
+    }
+    target = subSpec
+  }
+
   // Extract name and version from parsed spec.
-  const name = parsed.name || pkgSpec
+  const name = target.name || pkgSpec
   let version: string | undefined
 
   // Handle different spec types from npm-package-arg.
   if (
-    parsed.type === 'tag' ||
-    parsed.type === 'version' ||
-    parsed.type === 'range'
+    target.type === 'tag' ||
+    target.type === 'version' ||
+    target.type === 'range'
   ) {
     // For npm registry packages:
     // - type 'tag': latest, beta, etc.
     // - type 'version': exact version like 1.0.0
     // - type 'range': version range like ^1.0.0, ~1.0.0, or * for bare names
     // Don't include '*' as a version - it means "any version".
-    if (parsed.fetchSpec && parsed.fetchSpec !== '*') {
-      version = parsed.fetchSpec
+    if (target.fetchSpec && target.fetchSpec !== '*') {
+      version = target.fetchSpec
     } else if (
-      parsed.rawSpec &&
-      parsed.rawSpec !== '*' &&
-      parsed.rawSpec !== parsed.name
+      target.rawSpec &&
+      target.rawSpec !== '*' &&
+      target.rawSpec !== target.name
     ) {
-      version = parsed.rawSpec
+      version = target.rawSpec
     }
   } else if (
-    parsed.type === 'git' ||
-    parsed.type === 'remote' ||
-    parsed.type === 'file'
+    target.type === 'git' ||
+    target.type === 'remote' ||
+    target.type === 'file'
   ) {
     // For non-registry specs, use rawSpec if different from name.
-    if (parsed.rawSpec && parsed.rawSpec !== parsed.name) {
-      version = parsed.rawSpec
+    if (target.rawSpec && target.rawSpec !== target.name) {
+      version = target.rawSpec
     }
   }
 

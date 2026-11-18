@@ -149,6 +149,21 @@ describe('shadowYarn', () => {
     )
   })
 
+  it('should scan the aliased package instead of the alias name on yarn add', async () => {
+    await shadowYarn([
+      'add',
+      'my-lodash@npm:lodash@4.17.21',
+      'node-types@npm:@types/node@20.0.0',
+    ])
+
+    expect(mockGetAlertsMapFromPurls).toHaveBeenCalledWith(
+      ['pkg:npm/lodash@4.17.21', 'pkg:npm/@types/node@20.0.0'],
+      expect.objectContaining({
+        nothrow: true,
+      }),
+    )
+  })
+
   it('should handle yarn dlx command', async () => {
     await shadowYarn(['dlx', 'cowsay@1.6.0'])
 
@@ -190,6 +205,26 @@ describe('shadowYarn', () => {
         'pkg:npm/axios@~1.0.0',
         'pkg:npm/@types/node@^20.0.0',
       ],
+      expect.objectContaining({
+        nothrow: true,
+      }),
+    )
+  })
+
+  it('should scan aliased dependencies from package.json for install command', async () => {
+    mockReadPackageJson.mockResolvedValue({
+      dependencies: {
+        'my-lodash': 'npm:lodash@^4',
+      },
+      devDependencies: {
+        'node-types': 'npm:@types/node@20.0.0',
+      },
+    })
+
+    await shadowYarn(['install'])
+
+    expect(mockGetAlertsMapFromPurls).toHaveBeenCalledWith(
+      ['pkg:npm/lodash@%5E4', 'pkg:npm/@types/node@20.0.0'],
       expect.objectContaining({
         nothrow: true,
       }),
